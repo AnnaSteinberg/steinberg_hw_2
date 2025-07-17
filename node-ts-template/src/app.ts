@@ -1,11 +1,15 @@
 import {createServer, IncomingMessage} from "node:http";
 import {debuglog} from "node:util";
-import {addUser, getAllUsers, updateUser, User} from "./model/users.ts";
+import {addUser, getAllUsers, getUser, removeUser, updateUser, User} from "./model/users.ts";
 
 
 const myServer =
     createServer(async (req, res) => {
         const {url, method} = req;
+        console.log(typeof url);
+
+        const fullURL = new URL(url!,`http://localhost:3005/${req.headers.host}`+"DELETE");// ??? to do
+        const id = Number(fullURL.searchParams.get("id"));//???
 
 
         function parseBody(req: InstanceType<typeof IncomingMessage>) {
@@ -55,6 +59,28 @@ const myServer =
                     res.end("Users data don't update!");
                 }
                 break
+            }
+            case "/api/user_delete" + "DELETE": {//                                 to do
+
+                const deleted = removeUser(id);
+                if (deleted) {
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end("User was deleted successfully!");
+                }else {
+                    res.writeHead(409, {'Content-Type': 'text/plain'});
+                    res.end("User not found!");
+                }
+                break;
+            }
+            case "/api/user" + "GET":{//                                        to do
+                const user = getUser(id);
+                if (user){
+                    res.writeHead(200, {'Content-Type': 'application/json'});
+                    res.end(user);
+                }else {
+                    res.writeHead(409, {'Content-Type': 'text/plain'});
+                    res.end("User not found!");}
+                break;
             }
             default:
                 res.writeHead(404, {'Content-Type': 'text/plain'});
