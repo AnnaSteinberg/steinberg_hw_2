@@ -40,6 +40,7 @@ export  const removeUser = (userId:number):User|null => {
 
 export const getUser = (userId: number):User|null => {
     const index = findIndex(userId)
+    console.log('index' + index)
     if( index === -1){
         return null
     }else{

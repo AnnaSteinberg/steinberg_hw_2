@@ -6,10 +6,8 @@ import {addUser, getAllUsers, getUser, removeUser, updateUser, User} from "./mod
 const myServer =
     createServer(async (req, res) => {
         const {url, method} = req;
-        console.log(typeof url);
 
-        const fullURL = new URL(url!,`http://localhost:3005/${req.headers.host}`+"DELETE");// ??? to do
-        const id = Number(fullURL.searchParams.get("id"));//???
+        const fURL = new URL(url!,`http://localhost:3333`);// ??? to do
 
 
         function parseBody(req: InstanceType<typeof IncomingMessage>) {
@@ -28,14 +26,14 @@ const myServer =
             })
         }
 
-        switch (url! + method) {
+        switch (fURL.pathname + method) {
             case"/api/users" + "POST": {
-                const body = await parseBody(req)
+                const body = await parseBody(req) as User;
                 console.log(body)
-                if (body) {
+                if (body && (body as User).id) {
                     addUser(body as User)
                     res.writeHead(201, {'Content-Type': 'text/plain'});
-                    res.end("User was added successfully!");
+                    res.end(`User ${body.id} was added successfully!`);
                 } else {
                     res.writeHead(409, {'Content-Type': 'text/plain'});
                     res.end("User already exists!");
@@ -47,13 +45,12 @@ const myServer =
                 res.end(JSON.stringify((getAllUsers())));
                 break;
             }
-            case "/api/user_update" + "POST": {
-                const body = await parseBody(req)
-                console.log(body)
-                if (body) {
+            case "/api/user_update" + "PUT": {
+                const body = await parseBody(req) as User
+                if (body && (body as User).id) {
                     updateUser(body as User)
-                    res.writeHead(201, {'Content-Type': 'text/plain'});
-                    res.end("User was updated successfully!");
+                    res.writeHead(200, {'Content-Type': 'text/plain'});
+                    res.end(`User ${body.id} was updated successfully!`);
                 }else {
                     res.writeHead(409, {'Content-Type': 'text/plain'});
                     res.end("Users data don't update!");
@@ -61,22 +58,27 @@ const myServer =
                 break
             }
             case "/api/user_delete" + "DELETE": {//                                 to do
-
+                const id = Number(fURL.searchParams.get("userId"))
                 const deleted = removeUser(id);
                 if (deleted) {
                     res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end("User was deleted successfully!");
+                    res.end(JSON.stringify(deleted));
                 }else {
-                    res.writeHead(409, {'Content-Type': 'text/plain'});
+                    res.writeHead(404, {'Content-Type': 'text/plain'});
                     res.end("User not found!");
                 }
                 break;
             }
-            case "/api/user" + "GET":{//                                        to do
+            case "/api/user" + "GET":{//
+                const id = Number(fURL.searchParams.get("userId"));//???
+//                                   to do
+                console.log("=======" + id)
+
                 const user = getUser(id);
+                console.log("user " + user)
                 if (user){
                     res.writeHead(200, {'Content-Type': 'application/json'});
-                    res.end(user);
+                    res.end(JSON.stringify(user));
                 }else {
                     res.writeHead(409, {'Content-Type': 'text/plain'});
                     res.end("User not found!");}
@@ -89,4 +91,4 @@ const myServer =
         }
     })
 
-myServer.listen(3005,()=> console.log(`Server started on port http://localhost:3005!`));
+myServer.listen(3333,()=> console.log(`Server started on port http://localhost:3333!`));
