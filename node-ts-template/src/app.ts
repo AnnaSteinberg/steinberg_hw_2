@@ -1,13 +1,15 @@
 import {createServer, IncomingMessage} from "node:http";
-import {debuglog} from "node:util";
 import {addUser, getAllUsers, getUser, removeUser, updateUser, User} from "./model/users.ts";
+import {emitter} from "./events/emitter.ts";
+import {myLogger} from "./events/logger.ts";
 
 
 const myServer =
     createServer(async (req, res) => {
+        myLogger.log("We got the request");
         const {url, method} = req;
 
-        const fURL = new URL(url!,`http://localhost:3333`);// ??? to do
+        const fURL = new URL(url!,`http://localhost:3333`);
 
 
         function parseBody(req: InstanceType<typeof IncomingMessage>) {
@@ -29,14 +31,19 @@ const myServer =
         switch (fURL.pathname + method) {
             case"/api/users" + "POST": {
                 const body = await parseBody(req) as User;
-                console.log(body)
                 if (body && (body as User).id) {
                     addUser(body as User)
+                    myLogger.save(`User with id ${body.id} was successfully added!`);
+
                     res.writeHead(201, {'Content-Type': 'text/plain'});
                     res.end(`User ${body.id} was added successfully!`);
+                    // emitter.emit('user_added')
+                    myLogger.log('Response for add user with id ' + body.id + ' was send successfully!');
                 } else {
                     res.writeHead(409, {'Content-Type': 'text/plain'});
                     res.end("User already exists!");
+                    myLogger.save(`User with id ${body.id} already exists!`);
+                    myLogger.log(`User with id ${body.id} already exists!`);
                 }
                 break;
             }
@@ -57,12 +64,14 @@ const myServer =
                 }
                 break
             }
-            case "/api/user_delete" + "DELETE": {//                                 to do
+            case "/api/user_delete" + "DELETE": {
                 const id = Number(fURL.searchParams.get("userId"))
                 const deleted = removeUser(id);
                 if (deleted) {
                     res.writeHead(200, {'Content-Type': 'application/json'});
                     res.end(JSON.stringify(deleted));
+                    // emitter.emit('user_removed');
+                    myLogger.save(`User with id ${id} was deleted!`);
                 }else {
                     res.writeHead(404, {'Content-Type': 'text/plain'});
                     res.end("User not found!");
@@ -70,18 +79,20 @@ const myServer =
                 break;
             }
             case "/api/user" + "GET":{//
-                const id = Number(fURL.searchParams.get("userId"));//???
-//                                   to do
-                console.log("=======" + id)
-
+                const id = Number(fURL.searchParams.get("userId"));
                 const user = getUser(id);
-                console.log("user " + user)
                 if (user){
                     res.writeHead(200, {'Content-Type': 'application/json'});
                     res.end(JSON.stringify(user));
                 }else {
                     res.writeHead(409, {'Content-Type': 'text/plain'});
                     res.end("User not found!");}
+                break;
+            }
+            case '/api/logger' + 'GET':{
+                const allLogs = myLogger.getLogArray()
+                res.writeHead(200, {'Content-Type': 'application/json'});
+                res.end(JSON.stringify(allLogs));
                 break;
             }
             default:
